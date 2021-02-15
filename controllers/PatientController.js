@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator')
-const Patient = require('../models/Patient')
+const { Patient } = require('../models')
 
 class PatientController {
   all(req, res) {
@@ -35,7 +35,72 @@ class PatientController {
         return res.status(500).json({ success: false, message: err })
       }
 
-      res.json({ status: 'SUCCESS', data: doc })
+      res.json({ success: 'true', data: doc })
+    })
+  }
+
+  async show(req, res) {
+    const { id } = req.params
+
+    try {
+      await Patient.findById(id, (err, docs) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: err })
+        }
+
+        res.status(200).json({ success: true, data: docs })
+      })
+    } catch (err) {
+      return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
+    }
+  }
+
+  async update(req, res) {
+    const errors = validationResult(req)
+
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() })
+    }
+
+    const patientId = req.params.id
+
+    const data = {
+      fullName: req.body.fullName,
+      phone: req.body.phone
+    }
+
+    Patient.updateOne(
+      { _id: patientId },
+      { $set: data },
+      (err, doc) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: err })
+        }
+
+        if (!doc) {
+          return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
+        }
+
+        res.status(200).json({ success: true, data: doc })
+      }
+    )
+  }
+
+  async delete(req, res) {
+    const { id } = req.params
+
+    try {
+      await Patient.findOne({ _id: id })
+    } catch (err) {
+      return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
+    }
+
+    Patient.deleteOne({ _id: id }, (err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: err })
+      }
+
+      return res.status(200).json({ success: true })
     })
   }
 }
