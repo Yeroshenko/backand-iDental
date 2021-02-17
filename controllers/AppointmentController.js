@@ -1,5 +1,8 @@
 const { validationResult } = require('express-validator')
+const dayjs = require('dayjs')
+
 const { Appointment, Patient } = require('../models')
+const { sendSMS, dateReverse } = require('../utils')
 
 class AppointmentController {
   all(req, res) {
@@ -23,6 +26,7 @@ class AppointmentController {
 
   async create(req, res) {
     const errors = validationResult(req)
+    let patient
 
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() })
@@ -38,17 +42,25 @@ class AppointmentController {
     }
 
     try {
-      await Patient.findOne({ _id: data.patient })
+      patient = await Patient.findOne({ _id: data.patient })
     } catch (err) {
       return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
     }
 
-    Appointment.create(data, (err, doc) => {
+    await Appointment.create(data, (err, doc) => {
       if (err) {
         return res.status(500).json({ success: false, message: err })
       }
 
-      res.json({ success: true, data: doc })
+      const delayedTime = dayjs(`${dateReverse(data.date)}T${data.time}`).subtract(1, 'minute').unix()
+
+      sendSMS({
+        number: patient.phone,
+        time: delayedTime,
+        text: `Сегодня в ${data.time} у Вас прием в стоматологию IDent.`
+      })
+
+      res.status(201).json({ success: true, data: doc })
     })
   }
 

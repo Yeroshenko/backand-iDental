@@ -10,6 +10,13 @@ const PatientSchema = new Schema(
   { timestamps: true }
 )
 
+PatientSchema.virtual('appointments', {
+  ref: 'Appointment',
+  localField: '_id',
+  foreignField: 'patient',
+  justOne: false
+})
+
 const Patient = model('Patient', PatientSchema)
 
 module.exports = Patient

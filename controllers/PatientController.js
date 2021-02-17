@@ -43,12 +43,16 @@ class PatientController {
     const { id } = req.params
 
     try {
-      await Patient.findById(id, (err, docs) => {
-        if (err) {
+      const patient = await Patient.findById(id)
+        .populate('appointments')
+        .exec()
+        .catch(err => {
           return res.status(500).json({ success: false, message: err })
-        }
+        })
 
-        res.status(200).json({ success: true, data: docs })
+      res.status(200).json({
+        success: true,
+        data: { ...patient._doc, appointments: patient.appointments }
       })
     } catch (err) {
       return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })

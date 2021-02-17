@@ -1,9 +1,11 @@
 const express = require('express')
 const cors = require('cors')
+const dotenv = require('dotenv')
 
 const { PatientCtrl, AppointmentCtrl } = require('./controllers')
 const { patientValidation, appointmentValidation } = require('./validations')
 
+dotenv.config()
 require('./core/db')
 
 const app = express()
