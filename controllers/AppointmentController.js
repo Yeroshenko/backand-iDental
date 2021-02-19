@@ -1,8 +1,9 @@
 const { validationResult } = require('express-validator')
 const dayjs = require('dayjs')
+const groupBy = require('lodash.groupby')
 
 const { Appointment, Patient } = require('../models')
-const { sendSMS, dateReverse } = require('../utils')
+const { sendSMS } = require('../utils')
 
 class AppointmentController {
   all(req, res) {
@@ -20,7 +21,7 @@ class AppointmentController {
           return res.status(500).json({ success: false, message: err })
         }
 
-        res.status(201).json({ success: true, data: docs })
+        res.status(201).json({ success: true, data: groupBy(docs, 'date') })
       })
   }
 
@@ -52,7 +53,7 @@ class AppointmentController {
         return res.status(500).json({ success: false, message: err })
       }
 
-      const delayedTime = dayjs(`${dateReverse(data.date)}T${data.time}`).subtract(1, 'minute').unix()
+      const delayedTime = dayjs(`${data.date}T${data.time}`).subtract(1, 'minute').unix()
 
       sendSMS({
         number: patient.phone,

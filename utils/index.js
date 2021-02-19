@@ -1,4 +1,3 @@
 module.exports = {
-  sendSMS: require('./sendSMS'),
-  dateReverse: require('./dateReverse')
+  sendSMS: require('./sendSMS')
 }
