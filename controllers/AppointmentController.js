@@ -1,6 +1,6 @@
 const { validationResult } = require('express-validator')
 const dayjs = require('dayjs')
-const groupBy = require('lodash.groupby')
+const { groupBy, reduce } = require('lodash')
 
 const { Appointment, Patient } = require('../models')
 const { sendSMS } = require('../utils')
@@ -13,15 +13,23 @@ class AppointmentController {
       return res.status(422).json({ errors: errors.array() })
     }
 
-    Appointment
-      .find({})
+    Appointment.find({})
       .populate('patient')
       .exec((err, docs) => {
         if (err) {
           return res.status(500).json({ success: false, message: err })
         }
 
-        res.status(201).json({ success: true, data: groupBy(docs, 'date') })
+        const data = reduce(
+          groupBy(docs, 'date'),
+          (result, value, key) => {
+            result = [...result, { title: key, data: value }]
+            return result
+          },
+          []
+        )
+
+        res.status(201).json({ success: true, data })
       })
   }
 
@@ -45,7 +53,9 @@ class AppointmentController {
     try {
       patient = await Patient.findOne({ _id: data.patient })
     } catch (err) {
-      return res.status(404).json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
+      return res
+        .status(404)
+        .json({ success: 'false', message: 'PATIENT_NOT_FOUND' })
     }
 
     await Appointment.create(data, (err, doc) => {
@@ -53,7 +63,9 @@ class AppointmentController {
         return res.status(500).json({ success: false, message: err })
       }
 
-      const delayedTime = dayjs(`${data.date}T${data.time}`).subtract(1, 'minute').unix()
+      const delayedTime = dayjs(`${data.date}T${data.time}`)
+        .subtract(1, 'minute')
+        .unix()
 
       sendSMS({
         number: patient.phone,
@@ -91,7 +103,9 @@ class AppointmentController {
         }
 
         if (!doc) {
-          return res.status(404).json({ success: 'false', message: 'APPOINTMENT_NOT_FOUND' })
+          return res
+            .status(404)
+            .json({ success: 'false', message: 'APPOINTMENT_NOT_FOUND' })
         }
 
         res.status(200).json({ success: true, data: doc })
@@ -105,10 +119,12 @@ class AppointmentController {
     try {
       await Appointment.findOne({ _id: id })
     } catch (err) {
-      return res.status(404).json({ success: 'false', message: 'APPOINTMENT_NOT_FOUND' })
+      return res
+        .status(404)
+        .json({ success: 'false', message: 'APPOINTMENT_NOT_FOUND' })
     }
 
-    Appointment.deleteOne({ _id: id }, (err) => {
+    Appointment.deleteOne({ _id: id }, err => {
       if (err) {
         return res.status(500).json({ success: false, message: err })
       }
