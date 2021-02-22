@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator')
 const dayjs = require('dayjs')
+const ruLocale = require('dayjs/locale/ru')
 const { groupBy, reduce } = require('lodash')
 
 const { Appointment, Patient } = require('../models')
@@ -23,7 +24,13 @@ class AppointmentController {
         const data = reduce(
           groupBy(docs, 'date'),
           (result, value, key) => {
-            result = [...result, { title: key, data: value }]
+            result = [
+              ...result,
+              {
+                title: dayjs(key).locale(ruLocale).format('DD MMMM'),
+                data: value
+              }
+            ]
             return result
           },
           []
